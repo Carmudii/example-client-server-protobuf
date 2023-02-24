@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package pokemon;
+
+option go_package = ".";
+
+message Pokemon {
+  string id = 1;
+  string name = 2;
+  string type = 3;
+  string region = 4;
+}
+
+message PokemonList {
+  repeated Pokemon pokemon = 1;
+}
+
+message PokemonQuery {
+  string id = 1;
+  string name = 2;
+  string region = 3;
+}
+
+message ErrorMessage {
+  string error_message = 1;
+  int32 error_code = 2;
+}
+
+message WebSocketMessage {
+  oneof paylod {
+    PokemonList PokemonList = 1;
+    ErrorMessage ErrorMessage = 2;
+  }
+}
