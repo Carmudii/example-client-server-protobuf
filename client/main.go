@@ -16,7 +16,7 @@ import (
 )
 
 func main() {
-	// Prompt the user for the server URL
+	// Create a new reader to read user input
 	reader := bufio.NewReader(os.Stdin)
 
 	// Create a new WebSocket dialer
