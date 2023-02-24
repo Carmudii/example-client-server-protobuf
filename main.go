@@ -163,7 +163,7 @@ func main() {
 
 	// Start the HTTP server
 	log.Println("Starting server...")
-	err := http.ListenAndServe(":80", nil)
+	err := http.ListenAndServe(":3471", nil)
 	if err != nil {
 		log.Fatal("Error starting server:", err)
 	}
