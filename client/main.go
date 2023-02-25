@@ -32,15 +32,6 @@ func main() {
 	// Read messages from the server
 	go readMessages(conn)
 
-	// Prompt the user for input and send it to the server
-	fmt.Println(`
-	--[ Welcome to the Pokemon WebSocket client ]--
-	Enter "list" to list all pokemons.
-	Enter "get id <id>" to get a pokemon by id.
-	Enter "get name <name>" to get a pokemon by name.
-	Enter "get region <region>" to get a pokemon by region.
-	Enter "exit" to exit.`)
-
 	for {
 		// Sleep for a second to prevent spamming
 		time.Sleep(10 * time.Millisecond)
@@ -97,32 +88,41 @@ func main() {
 // Read messages from the WebSocket connection
 func readMessages(conn *websocket.Conn) {
 	for {
-		_, message, err := conn.ReadMessage()
+		messageType, message, err := conn.ReadMessage()
 		if err != nil {
 			log.Println("WebSocket read error:", err)
 			return
 		}
 
-		// Decode the message as a PokemonList
-		newWebSocketMessage := &pb.WebSocketMessage{}
-		err = proto.Unmarshal(message, newWebSocketMessage)
-		if err != nil {
-			log.Println("protobuf decode error:", err)
-			continue
-		}
+		switch messageType {
+		case websocket.TextMessage:
+			log.Println(string(message))
 
-		switch newWebSocketMessage.GetPaylod().(type) {
-		case *pb.WebSocketMessage_PokemonList:
-			fmt.Println("Received Pokemons:")
-			for _, p := range newWebSocketMessage.GetPokemonList().Pokemon {
-				fmt.Printf("Name: %s, id: %s, type: %s\n", p.Name, p.Id, p.Type)
+		case websocket.BinaryMessage:
+			// Decode the message as a WebSocketMessage
+			newWebSocketMessage := &pb.WebSocketMessage{}
+			err = proto.Unmarshal(message, newWebSocketMessage)
+			if err != nil {
+				log.Println("protobuf decode error:", err)
+				continue
 			}
 
-		case *pb.WebSocketMessage_ErrorMessage:
-			fmt.Println("[SERVER]:", newWebSocketMessage.GetErrorMessage().ErrorMessage)
+			switch newWebSocketMessage.GetPaylod().(type) {
+			case *pb.WebSocketMessage_PokemonList:
+				fmt.Println("Received Pokemons:")
+				for _, p := range newWebSocketMessage.GetPokemonList().Pokemon {
+					fmt.Printf("Name: %s, id: %s, type: %s\n", p.Name, p.Id, p.Type)
+				}
+
+			case *pb.WebSocketMessage_ErrorMessage:
+				fmt.Println("[SERVER]:", newWebSocketMessage.GetErrorMessage().ErrorMessage)
+
+			default:
+				fmt.Println("undefined message type")
+			}
 
 		default:
-			fmt.Println("undefined message type")
+			log.Println("Received unsupported message type")
 		}
 	}
 }
