@@ -36,7 +36,7 @@ type Connection struct {
 // Define a method to send a message
 func (conn *Connection) handleOutgoingMessage() {
 	for message := range conn.send {
-		err := conn.ws.WriteMessage(websocket.TextMessage, message)
+		err := conn.ws.WriteMessage(websocket.BinaryMessage, message)
 		if err != nil {
 			log.Println("Error writing message to WebSocket:", err)
 			break
@@ -44,6 +44,22 @@ func (conn *Connection) handleOutgoingMessage() {
 	}
 	// Connection is closed
 	conn.ws.WriteMessage(websocket.CloseMessage, []byte{})
+}
+
+// Define a method to send initial data to the client
+func (conn *Connection) sendInitialData() {
+	var serverMessage = `--[ Welcome to the Pokemon WebSocket client ]--
+	Enter "list" to list all pokemons.
+	Enter "get id <id>" to get a pokemon by id.
+	Enter "get name <name>" to get a pokemon by name.
+	Enter "get region <region>" to get a pokemon by region.
+	Enter "exit" to exit.`
+
+	err := conn.ws.WriteMessage(websocket.TextMessage, []byte(serverMessage))
+	if err != nil {
+		log.Println("Error writing message to WebSocket:", err)
+		return
+	}
 }
 
 // Define a function to convert a PokemonList to a byte slice
@@ -57,6 +73,7 @@ func marshalPokemonList(pl *pb.PokemonList) ([]byte, error) {
 	return proto.Marshal(wrappedMessage)
 }
 
+// Define a function to convert an error message to a byte slice
 func marshalErrorMessage(message string, errorCode int32) ([]byte, error) {
 	var wrappedMessage = &pb.WebSocketMessage{
 		Paylod: &pb.WebSocketMessage_ErrorMessage{
@@ -78,6 +95,9 @@ func handleConnection(ws *websocket.Conn, connections map[*Connection]bool) {
 		send: make(chan []byte),
 	}
 	connections[conn] = true
+
+	// Send initial data to the client
+	conn.sendInitialData()
 
 	go conn.handleOutgoingMessage()
 
@@ -156,6 +176,8 @@ func main() {
 			log.Println("Error upgrading connection to WebSocket:", err)
 			return
 		}
+
+		fmt.Println("New connection established", ws.RemoteAddr().String())
 
 		// Handle the WebSocket connection
 		handleConnection(ws, connections)
