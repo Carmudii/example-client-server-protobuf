@@ -43,6 +43,7 @@ func main() {
 		var queryCommand *pb.PokemonQuery
 
 		switch {
+
 		case command == "list":
 			fmt.Printf("Listing all pokemons...\n")
 			queryCommand = &pb.PokemonQuery{}
@@ -129,7 +130,7 @@ func readMessages(conn *websocket.Conn) {
 
 // Send a message to the WebSocket connection
 func sendMessage(conn *websocket.Conn, msg []byte) {
-	err := conn.WriteMessage(websocket.TextMessage, msg)
+	err := conn.WriteMessage(websocket.BinaryMessage, msg)
 	if err != nil {
 		log.Println("WebSocket write error:", err)
 	}

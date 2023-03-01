@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package protobuf;
+
+option go_package = ".";
+
+message ErrorMessage {
+  string error_message = 1;
+  int32 error_code = 2;
+}
+
+message SubscribeRequest {
+    string channel = 1;
+}
+
+message SubscribeResponse {
+    string message = 1;
+}
+
+message WebSocketMessage {
+  oneof paylod {
+    ErrorMessage ErrorMessage = 1;
+    SubscribeResponse SubscribeResponse = 2;
+  }
+}
