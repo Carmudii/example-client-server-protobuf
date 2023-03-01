@@ -28,48 +28,43 @@ type WebSocketServer struct {
 }
 
 // This a method that will handle subscription requests coming from the client
-func (server *WebSocketServer) subscribe(conn *websocket.Conn, channel string) {
-	for client, ok := range server.clients {
-		if client == conn && ok {
-			if server.channels[client] == nil {
-				server.channels[client] = make(map[string]bool)
-			}
-
-			server.channels[client][channel] = true
+func (server *WebSocketServer) subscribe(client *websocket.Conn, channel string) {
+	if server.clients[client] {
+		if server.channels[client] == nil {
+			server.channels[client] = make(map[string]bool)
 		}
+
+		server.channels[client][channel] = true
 	}
 }
 
 // This a method that will handle unsubscribe requests coming from the client
-func (server *WebSocketServer) unsubscribe(conn *websocket.Conn, channel string) {
-	for client, ok := range server.clients {
-		if client == conn && ok {
-			if server.channels[client] == nil {
-				server.channels[client] = make(map[string]bool)
-			}
-
-			server.channels[client][channel] = false
+func (server *WebSocketServer) unsubscribe(client *websocket.Conn, channel string) {
+	if server.clients[client] {
+		if server.channels[client] == nil {
+			server.channels[client] = make(map[string]bool)
 		}
+
+		server.channels[client][channel] = false
 	}
 }
 
 // This a method that allows us to broadcast a message to all clients with specific channel
 // subscribed to it
-func (server *WebSocketServer) broadcastToSubscribers(channel string, message []byte) {
+func (server *WebSocketServer) broadcastToSubscribers(channel string, message *[]byte) {
 	for client, channelMap := range server.channels {
 		// Check if the user is have subscribed to the channel
 		if channelMap[channel] {
-			err := client.WriteMessage(websocket.BinaryMessage, message)
+			err := client.WriteMessage(websocket.BinaryMessage, *message)
 			if err != nil {
 				fmt.Println("Error writing message:", err)
-				break
 			}
 		}
 	}
 }
 
-func (server *WebSocketServer) sendTextMessage(conn *websocket.Conn, message []byte) {
-	err := conn.WriteMessage(websocket.TextMessage, message)
+func (server *WebSocketServer) sendTextMessage(conn *websocket.Conn, message *[]byte) {
+	err := conn.WriteMessage(websocket.TextMessage, *message)
 	if err != nil {
 		fmt.Println("Error writing message:", err)
 	}
@@ -97,14 +92,14 @@ func (server *WebSocketServer) handleWebSocketConnection(w http.ResponseWriter, 
 	// Register our new client
 	server.register <- conn
 
-	var message = `---[ Welcome to subscribed-client ]---
+	var message = []byte(`---[ Welcome to subscribed-client ]---
 	Command list:
 	subs <channel>
 	unsubs <channel>
-	channel list: positive, negative`
+	channel list: positive, negative`)
 
 	// Send initial message to the client
-	server.sendTextMessage(conn, []byte(message))
+	server.sendTextMessage(conn, &message)
 
 	// Make sure we close the connection when the function returns
 	defer func() {
@@ -225,7 +220,7 @@ func (server *WebSocketServer) run() {
 		case message := <-server.broadcast:
 			// Send the message to all clients that are subscribed to the channel
 			for channel, byte := range message {
-				server.broadcastToSubscribers(channel, byte)
+				server.broadcastToSubscribers(channel, &byte)
 			}
 		}
 	}
